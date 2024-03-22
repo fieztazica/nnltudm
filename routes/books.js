@@ -1,20 +1,21 @@
 var express = require('express')
+var bookModel = require('../schemas/book')
 var router = express.Router()
 
-var books = [
-    {
-        id: 1,
-        name: 'Sach giao khoa 1',
-    },
-    {
-        id: 2,
-        name: 'Sach giao khoa 2',
-    },
-    {
-        id: 3,
-        name: 'Sach giao khoa 3',
-    },
-]
+// var books = [
+//     {
+//         id: 1,
+//         name: 'Sach giao khoa 1',
+//     },
+//     {
+//         id: 2,
+//         name: 'Sach giao khoa 2',
+//     },
+//     {
+//         id: 3,
+//         name: 'Sach giao khoa 3',
+//     },
+// ]
 
 function genId(length) {
     const source =
@@ -28,62 +29,127 @@ function genId(length) {
 }
 
 /* GET books listing. */
-router.get('/', function (req, res, next) {
+router.get('/', async function (req, res, next) {
+    const limit = req.query.limit || 1
+    const page = req.query.page || 1
+
+    let sort = {}
+
+    if (req.query.sort) {
+        if (req.query.sort.startsWith('-')) {
+            sort[req.query.sort.substring(1, req.query.sort.length)] = -1
+        } else {
+            sort[req.query.sort] = 1
+        }
+    }
+
+    /**
+     * ! WARNING: asd
+     */
+    const contain = Object.fromEntries(
+        Object.keys(req.query)
+            .filter((v) => !['limit', 'page', 'sort'].includes(v))
+            .map((key) => {
+                let value = req.query[`${key}`]
+                if (typeof req.query[key] === 'string') {
+                    value = value?.replace(',', '|') || value
+                    value = new RegExp(value, 'i')
+                }
+                return [key, value]
+            })
+    )
+
+    console.log(contain)
+    const books = await bookModel
+        .find({
+            isDeleted: false,
+            ...contain,
+        })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .sort(sort)
+        .exec()
     res.send(books.filter((v) => !v.isDeleted))
 })
 
 /* GET book by id. */
-router.get('/:id', function (req, res, next) {
-    const book = books.find((v) => v.id == req.params.id && !v.isDeleted)
-    if (!book) res.status(404).send('Not found')
-    else res.send(book)
+router.get('/:id', async function (req, res, next) {
+    try {
+        const book = await bookModel
+            .find({
+                _id: decodeURIComponent(req.params.id),
+                isDeleted: false,
+            })
+            .exec()
+        res.send(book)
+    } catch (error) {
+        console.error(error)
+        res.status(400).send({
+            message: error.message,
+        })
+    }
 })
 
 /* POST a book . */
-router.post('/', function (req, res, next) {
-    if (req.body) {
-        if (books.some((v) => v.id == req.body.id)) {
-            res.status(400).send('ID da ton tai')
-        } else {
-            let book = {
-                ...req.body,
-                id: req.body.id || genId(16),
-            }
-            books.push(book)
-            res.send(book)
-        }
-    } else {
-        res.status(400).send('Data ko hop le')
+router.post('/', async function (req, res, next) {
+    try {
+        // if (books.some((v) => v.id == req.body.id)) {
+        //     res.status(400).send('ID da ton tai')
+        // } else {
+        const book = new bookModel({
+            name: req.body.name,
+            author: req.body.author,
+            year: req.body.year,
+        })
+        await book.save()
+        res.send(book)
+        // }
+    } catch (error) {
+        console.error(error)
+        res.status(400).send({
+            message: error.message,
+        })
     }
 })
 
 /* PUT  edit a book . */
-router.put('/:id', function (req, res, next) {
-    const book = books.find((v) => v.id == req.params.id)
-    if (!book) {
-        res.status(404).send('Book not found')
-        return
-    }
-
-    if (req.body.name) {
-        book.name = req.body.name
+router.put('/:id', async function (req, res, next) {
+    try {
+        const book = await bookModel.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            {
+                new: true,
+            }
+        )
         res.send(book)
-    } else {
-        res.status(400).send('Data ko hop le')
+    } catch (error) {
+        console.error(error)
+        res.status(400).send({
+            message: error.message,
+        })
     }
 })
 
 /* DELETE delete a book . */
-router.delete('/:id', function (req, res, next) {
-    const book = books.find((v) => v.id == req.params.id)
-    if (!book) {
-        res.status(404).send('Book not found')
-        return
+router.delete('/:id', async function (req, res, next) {
+    try {
+        const book = await bookModel.findByIdAndUpdate(
+            req.params.id,
+            {
+                isDeleted: true,
+            },
+            {
+                new: true,
+            }
+        )
+        res.send(book)
+    } catch (error) {
+        console.error(error)
+        res.status(400).send({
+            message: error.message,
+        })
     }
-
-    book.isDeleted = true
-
-    res.send(book)
 })
 
 module.exports = router
