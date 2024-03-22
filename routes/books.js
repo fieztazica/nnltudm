@@ -30,7 +30,7 @@ function genId(length) {
 
 /* GET books listing. */
 router.get('/', async function (req, res, next) {
-    const limit = req.query.limit || 1
+    const limit = req.query.limit || 10
     const page = req.query.page || 1
 
     let sort = {}
@@ -63,8 +63,10 @@ router.get('/', async function (req, res, next) {
     const books = await bookModel
         .find({
             isDeleted: false,
-            ...contain,
+            // ...contain,
         })
+        .populate('author')
+        .lean()
         .skip((page - 1) * limit)
         .limit(limit)
         .sort(sort)

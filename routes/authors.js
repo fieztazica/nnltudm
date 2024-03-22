@@ -36,6 +36,7 @@ router.get('/', async function (req, res, next) {
             isDeleted: false,
             ...contain,
         })
+        .populate('published')
         .skip((page - 1) * limit)
         .limit(limit)
         .sort(sort)
