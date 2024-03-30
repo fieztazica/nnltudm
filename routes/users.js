@@ -1,6 +1,8 @@
-var express = require('express')
-var userModel = require('../schemas/user')
-var router = express.Router()
+const express = require('express')
+const { check, body, validationResult } = require('express-validator')
+const userModel = require('../schemas/user')
+const userValidator = require('../validators/user')
+const router = express.Router()
 
 /* GET */
 router.get('/', async function (req, res, next) {
@@ -36,7 +38,7 @@ router.get('/', async function (req, res, next) {
             isDeleted: false,
             ...contain,
         })
-        .populate('published')
+        // .populate('published')
         .skip((page - 1) * limit)
         .limit(limit)
         .sort(sort)
@@ -44,7 +46,7 @@ router.get('/', async function (req, res, next) {
     res.send(items.filter((v) => !v.isDeleted))
 })
 
-/* GET */
+/* GET /id*/
 router.get('/:id', async function (req, res, next) {
     try {
         const item = await userModel
@@ -63,7 +65,15 @@ router.get('/:id', async function (req, res, next) {
 })
 
 /* POST */
-router.post('/', async function (req, res, next) {
+router.post('/', userValidator(), async function (req, res, next) {
+    const result = validationResult(req)
+    if (result.errors.length > 0) {
+        res.status(400).send({
+            success: false,
+            data: result.errors,
+        })
+        return
+    }
     try {
         const item = new userModel(req.body)
         await item.save()

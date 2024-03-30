@@ -50,10 +50,21 @@ router.get('/', async function (req, res, next) {
         Object.keys(req.query)
             .filter((v) => !['limit', 'page', 'sort'].includes(v))
             .map((key) => {
+                const stringArray = ['name', 'author']
+                const numberArray = ['year']
                 let value = req.query[`${key}`]
-                if (typeof req.query[key] === 'string') {
+                if (stringArray.includes(key)) {
                     value = value?.replace(',', '|') || value
                     value = new RegExp(value, 'i')
+                }
+                if (numberArray.includes(key)) {
+                    let string = JSON.stringify(value)
+                    let newString = string.replaceAll(
+                        /^(?!\$)(lte|lt|gt|gte)$/gi,
+                        (res) => '$' + res
+                    )
+                    value = JSON.parse(string)
+                    console.log(string, value, newString)
                 }
                 return [key, value]
             })

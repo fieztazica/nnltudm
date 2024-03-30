@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
 
 const userSchema = mongoose.Schema(
     {
@@ -24,6 +25,7 @@ const userSchema = mongoose.Schema(
         role: {
             type: [String],
             required: true,
+            default: ['USER'],
         },
 
         isDeleted: {
@@ -35,6 +37,10 @@ const userSchema = mongoose.Schema(
         timestamps: true,
     }
 )
+
+userSchema.pre('save', function (params) {
+    this.password = bcrypt.hashSync(this.password, 10)
+})
 
 const UserModel = new mongoose.model('user', userSchema)
 
