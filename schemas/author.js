@@ -4,7 +4,7 @@ const authorSchema = mongoose.Schema(
     {
         name: {
             type: String,
-            require: true,
+            required: true,
         },
         isDeleted: {
             type: Boolean,
