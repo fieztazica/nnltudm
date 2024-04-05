@@ -41,7 +41,8 @@ router.get('/', async function (req, res, next) {
         .limit(limit)
         .sort(sort)
         .exec()
-    res.send(authors.filter((v) => !v.isDeleted))
+
+    resHandle({ res, data: authors.filter((v) => !v.isDeleted) })
 })
 
 /* GET author by id. */
@@ -53,12 +54,10 @@ router.get('/:id', async function (req, res, next) {
                 isDeleted: false,
             })
             .exec()
-        res.send(author)
+        resHandle({ res, data: author })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -67,12 +66,10 @@ router.post('/', async function (req, res, next) {
     try {
         const author = new authorModel(req.body)
         await author.save()
-        res.send(author)
+        resHandle({ res, data: author })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -86,12 +83,10 @@ router.put('/:id', async function (req, res, next) {
                 new: true,
             }
         )
-        res.send(author)
+        resHandle({ res, data: author })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -107,12 +102,10 @@ router.delete('/:id', async function (req, res, next) {
                 new: true,
             }
         )
-        res.send(author)
+        resHandle({ res, data: author })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 

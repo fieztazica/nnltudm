@@ -1,5 +1,6 @@
 var express = require('express')
 var bookModel = require('../schemas/book')
+const resHandle = require('../helpers/resHandle')
 var router = express.Router()
 
 // var books = [
@@ -82,7 +83,8 @@ router.get('/', async function (req, res, next) {
         .limit(limit)
         .sort(sort)
         .exec()
-    res.send(books.filter((v) => !v.isDeleted))
+
+    resHandle({ res, data: books.filter((v) => !v.isDeleted) })
 })
 
 /* GET book by id. */
@@ -94,12 +96,10 @@ router.get('/:id', async function (req, res, next) {
                 isDeleted: false,
             })
             .exec()
-        res.send(book)
+        resHandle({ res, data: book })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -115,13 +115,11 @@ router.post('/', async function (req, res, next) {
             year: req.body.year,
         })
         await book.save()
-        res.send(book)
+        resHandle({ res, data: book })
         // }
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -135,12 +133,10 @@ router.put('/:id', async function (req, res, next) {
                 new: true,
             }
         )
-        res.send(book)
+        resHandle({ res, data: book })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -156,12 +152,10 @@ router.delete('/:id', async function (req, res, next) {
                 new: true,
             }
         )
-        res.send(book)
+        resHandle({ res, data: book })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 

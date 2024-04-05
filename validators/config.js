@@ -1,11 +1,8 @@
-const { check } = require('express-validator')
-const util = require('util')
-
 const options = {
     PASSWORD: {
         minLength: 8,
     },
-    ROLES: { enums: [('USER', 'ADMIN', 'MOD')] },
+    ROLES: { enums: ['USER', 'ADMIN', 'MOD'] },
     USERNAME: {
         length: {
             min: 8,
@@ -23,11 +20,7 @@ const messages = {
     },
 }
 
-module.exports = function () {
-    return [
-        check('username').isLength(options.USERNAME.length),
-        check('email', messages.errors.PASSWORD).isEmail(),
-        check('password').isStrongPassword(options.PASSWORD),
-        check('role').isIn(options.ROLES.enums),
-    ]
+module.exports = {
+    options,
+    messages,
 }

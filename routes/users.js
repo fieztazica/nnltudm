@@ -1,50 +1,58 @@
 const express = require('express')
 const { check, body, validationResult } = require('express-validator')
 const userModel = require('../schemas/user')
-const userValidator = require('../validators/user')
+const userValidator = require('../validators/isUserValid')
+const protectLogin = require('../middlewares/protectLogin')
+const protectRole = require('../middlewares/protectRole')
+const resHandle = require('../helpers/resHandle')
 const router = express.Router()
 
 /* GET */
-router.get('/', async function (req, res, next) {
-    const limit = req.query.limit || 1
-    const page = req.query.page || 1
+router.get(
+    '/',
+    protectLogin(),
+    protectRole('ADMIN', 'MODERATOR'),
+    async function (req, res, next) {
+        const limit = req.query.limit || 1
+        const page = req.query.page || 1
 
-    let sort = {}
+        let sort = {}
 
-    if (req.query.sort) {
-        if (req.query.sort.startsWith('-')) {
-            sort[req.query.sort.substring(1, req.query.sort.length)] = -1
-        } else {
-            sort[req.query.sort] = 1
+        if (req.query.sort) {
+            if (req.query.sort.startsWith('-')) {
+                sort[req.query.sort.substring(1, req.query.sort.length)] = -1
+            } else {
+                sort[req.query.sort] = 1
+            }
         }
-    }
 
-    const contain = Object.fromEntries(
-        Object.keys(req.query)
-            .filter((v) => !['limit', 'page', 'sort'].includes(v))
-            .map((key) => {
-                let value = req.query[`${key}`]
-                if (typeof req.query[key] === 'string') {
-                    value = value?.replace(',', '|') || value
-                    value = new RegExp(value, 'i')
-                }
-                return [key, value]
+        const contain = Object.fromEntries(
+            Object.keys(req.query)
+                .filter((v) => !['limit', 'page', 'sort'].includes(v))
+                .map((key) => {
+                    let value = req.query[`${key}`]
+                    if (typeof req.query[key] === 'string') {
+                        value = value?.replace(',', '|') || value
+                        value = new RegExp(value, 'i')
+                    }
+                    return [key, value]
+                })
+        )
+
+        // console.log(contain)
+        const items = await userModel
+            .find({
+                isDeleted: false,
+                ...contain,
             })
-    )
-
-    console.log(contain)
-    const items = await userModel
-        .find({
-            isDeleted: false,
-            ...contain,
-        })
-        // .populate('published')
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .sort(sort)
-        .exec()
-    res.send(items.filter((v) => !v.isDeleted))
-})
+            // .populate('published')
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .sort(sort)
+            .exec()
+        resHandle({ res, data: items.filter((v) => !v.isDeleted) })
+    }
+)
 
 /* GET /id*/
 router.get('/:id', async function (req, res, next) {
@@ -55,12 +63,10 @@ router.get('/:id', async function (req, res, next) {
                 isDeleted: false,
             })
             .exec()
-        res.send(item)
+        resHandle({ res, data: item })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -68,11 +74,7 @@ router.get('/:id', async function (req, res, next) {
 router.post('/', userValidator(), async function (req, res, next) {
     const result = validationResult(req)
     if (result.errors.length > 0) {
-        res.status(400).send({
-            success: false,
-            data: result.errors,
-        })
-        return
+        return resHandle({ res, status: false, data: result.errors })
     }
     try {
         const item = new userModel(req.body)
@@ -80,9 +82,7 @@ router.post('/', userValidator(), async function (req, res, next) {
         res.send(item)
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -96,12 +96,11 @@ router.put('/:id', async function (req, res, next) {
                 new: true,
             }
         )
-        res.send(item)
+
+        resHandle({ res, data: item })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
@@ -117,12 +116,10 @@ router.delete('/:id', async function (req, res, next) {
                 new: true,
             }
         )
-        res.send(item)
+        resHandle({ res, data: item })
     } catch (error) {
         console.error(error)
-        res.status(400).send({
-            message: error.message,
-        })
+        resHandle({ res, status: false, data: error.message })
     }
 })
 
