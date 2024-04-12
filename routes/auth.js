@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken')
 const userValidator = require('../validators/isUserValid')
 const sendMail = require('../helpers/sendMail')
 const resHandle = require('../helpers/resHandle')
-const strongPassword = require('../validators/isStrongPassword')
 const validationChecker = require('../middlewares/validationChecker')
 const isEmail = require('../validators/isEmail')
 const protectLogin = require('../middlewares/protectLogin')
@@ -126,7 +125,7 @@ router.post(
 
 router.post(
     '/password-reset/:token',
-    validationChecker(strongPassword()),
+    validationChecker(isStrongPassword()),
     async function (req, res, next) {
         try {
             let user = await userModel.findOne({

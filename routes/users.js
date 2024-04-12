@@ -6,6 +6,7 @@ const protectLogin = require('../middlewares/protectLogin')
 const protectRole = require('../middlewares/protectRole')
 const resHandle = require('../helpers/resHandle')
 const router = express.Router()
+require('express-async-errors');
 
 /* GET */
 router.get(
